@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CryptDragon | Hybrid Encryption</title>
+    <link rel="icon" type="image/png" href="dragon-logo.png">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* Consolidated Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #070709;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(to bottom, #8a2be2, #b066ff);
+            border-radius: 5px;
+            border: 2px solid #070709;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(to bottom, #9932cc, #d899ff);
+        }
+
+        :root {
+            --bg-dark: #070709;
+            --card-bg: rgba(18, 18, 24, 0.85);
+            --primary: #8a2be2;
+            --primary-hover: #9932cc;
+            --secondary: #b066ff;
+            --accent: #ff00c1;
+            --text-main: #ffffff;
+            --text-dim: #a0a0a0;
+            --success: #00ff7f;
+            --error: #ff4c4c;
+            --glass-border: rgba(138, 43, 226, 0.3);
+            --glow-shadow: 0 0 15px rgba(138, 43, 226, 0.4);
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(138, 43, 226, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(0, 210, 255, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(138, 43, 226, 0.05) 0%, transparent 60%);
+            background-attachment: fixed;
+            overflow-x: hidden;
+            position: relative;
+            padding: 0;
+            animation: bgPulse 10s ease infinite alternate;
+        }
+
+        @keyframes bgPulse {
+            from { background-position: 0% 0%; }
+            to { background-position: 100% 100%; }
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border: 3px solid var(--primary);
+            box-shadow: inset 0 0 20px rgba(138, 43, 226, 0.5), 0 0 20px rgba(138, 43, 226, 0.5);
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.6;
+            animation: borderGlow 4s infinite alternate;
+        }
+
+        @keyframes borderGlow {
+            from { opacity: 0.3; filter: hue-rotate(0deg); }
+            to { opacity: 0.8; filter: hue-rotate(20deg); }
+        }
+
+        .container {
+            width: 85%;
+            max-width: 950px;
+            padding: 60px 20px;
+            margin: 0 auto;
+            flex: 1;
+            animation: fadeIn 1s cubic-bezier(0.23, 1, 0.32, 1);
+            position: relative;
+            z-index: 10;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        header h1 {
+            font-size: 3.5rem;
+            font-weight: 900;
+            background: linear-gradient(45deg, var(--primary), #d899ff, var(--primary));
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+            letter-spacing: -2px;
+            animation: shine 3s linear infinite;
+        }
+
+        @keyframes shine {
+            to { background-position: 200% center; }
+        }
+
+        header p {
+            color: var(--text-dim);
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        @media (max-width: 850px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: var(--card-bg);
+            backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border);
+            border-radius: 28px;
+            padding: 35px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.6), var(--glow-shadow);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        #receiver-panel { animation-delay: 0s; }
+        #sender-panel { animation-delay: 1.5s; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .panel:hover {
+            transform: translateY(-15px) scale(1.01);
+            border-color: rgba(138, 43, 226, 0.6);
+            box-shadow: 0 40px 80px rgba(0,0,0,0.8), 0 0 30px rgba(138, 43, 226, 0.5);
+            animation-play-state: paused;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+            gap: 15px;
+        }
+
+        .panel h2 {
+            font-size: 1.7rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .stepper {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .step {
+            position: relative;
+            padding-left: 55px;
+            opacity: 0.2;
+            filter: grayscale(80%);
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: slideIn 0.8s cubic-bezier(0.23, 1, 0.32, 1) both;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-30px); }
+            to { opacity: 0.2; transform: translateX(0); }
+        }
+
+        .step.active {
+            opacity: 1;
+            filter: grayscale(0%);
+            animation: activePulse 2s ease infinite;
+        }
+
+        @keyframes activePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        .step.completed {
+            opacity: 0.8;
+            filter: grayscale(0%);
+        }
+
+        .step-num {
+            position: absolute;
+            left: 0;
+            top: 5px;
+            width: 36px;
+            height: 36px;
+            background: #1a1a1f;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1rem;
+            border: 2px solid var(--glass-border);
+            z-index: 2;
+            transition: all 0.3s ease;
+        }
+
+        .step.active .step-num {
+            background: var(--primary);
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(138, 43, 226, 0.7);
+            transform: scale(1.1);
+        }
+
+        .step.completed .step-num {
+            background: var(--success);
+            border-color: var(--success);
+            box-shadow: 0 0 15px rgba(0, 255, 127, 0.4);
+        }
+
+        .step::after {
+            content: '';
+            position: absolute;
+            left: 17px;
+            top: 41px;
+            width: 2px;
+            height: calc(100% + 25px);
+            background: var(--glass-border);
+            z-index: 1;
+        }
+
+        .step:last-child::after {
+            display: none;
+        }
+
+        .step.completed::after {
+            background: var(--success);
+            opacity: 0.6;
+        }
+
+        .step-content {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 20px;
+            padding: 20px 25px;
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .step.active .step-content {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--glass-border);
+            box-shadow: inset 0 0 10px rgba(138, 43, 226, 0.1);
+        }
+
+        .step-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 6px;
+        }
+
+        .step-desc {
+            font-size: 0.9rem;
+            color: var(--text-dim);
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 0.95rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 8px 25px rgba(138, 43, 226, 0.4);
+        }
+
+        .btn:disabled {
+            background: #25252b;
+            color: #555;
+            cursor: not-allowed;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+
+
+        .file-label {
+            display: block;
+            padding: 15px;
+            background: rgba(138, 43, 226, 0.05);
+            border: 2px dashed var(--glass-border);
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .status-badge {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.05);
+            margin-left: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-badge.done {
+            background: rgba(0, 255, 127, 0.15);
+            color: var(--success);
+            border: 1px solid rgba(0, 255, 127, 0.3);
+            animation: badgePop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+        }
+
+        @keyframes badgePop {
+            from { transform: scale(0); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.2);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .input-ip-modern {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 12px 18px;
+            color: white;
+            font-size: 1rem;
+            width: 100%;
+            outline: none;
+            transition: all 0.3s ease;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+            letter-spacing: 1px;
+        }
+
+        .input-ip-modern:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 10px rgba(138, 43, 226, 0.3), inset 0 2px 4px rgba(0,0,0,0.3);
+            background: rgba(138, 43, 226, 0.05);
+        }
+
+        .input-file { display: none; }
+
+        footer {
+            background: rgba(18, 18, 24, 0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--glass-border);
+            padding: 60px 20px 30px;
+            margin-top: auto;
+        }
+
+        .footer-content {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1.5fr;
+            gap: 40px;
+        }
+
+        .footer-section h3, .footer-section h4 { color: var(--primary); margin-bottom: 20px; font-weight: 800; }
+        .footer-section p, .footer-section ul li { color: var(--text-dim); line-height: 1.6; font-size: 0.95rem; list-style: none; }
+
+        .error-msg {
+            color: #ff4c4c;
+            font-size: 0.85rem;
+            margin-top: 10px;
+            font-weight: 600;
+            display: none;
+            animation: shake 0.4s ease;
+            padding: 8px 14px;
+            border-radius: 8px;
+            background: rgba(255, 76, 76, 0.1);
+            border: 1px solid rgba(255, 76, 76, 0.3);
+        }
+
+        .success-msg {
+            color: #00ff7f;
+            font-size: 0.85rem;
+            margin-top: 10px;
+            font-weight: 600;
+            display: none;
+            animation: badgePop 0.4s ease;
+            padding: 8px 14px;
+            border-radius: 8px;
+            background: rgba(0, 255, 127, 0.08);
+            border: 1px solid rgba(0, 255, 127, 0.3);
+        }
+
+        @keyframes attentionPulse {
+            0%, 100% { box-shadow: 0 0 0px rgba(138, 43, 226, 0); }
+            50% { box-shadow: 0 0 20px rgba(138, 43, 226, 0.5); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 10px;">
+                <img src="dragon-logo.png" alt="CryptDragon Logo" style="width: 50px; height: 50px; filter: drop-shadow(0 0 12px rgba(138, 43, 226, 0.6)); mix-blend-mode: lighten;">
+                <h1 style="margin: 0; font-size: 3.5rem;">CryptDragon</h1>
+            </div>
+            <p>ADVANCED HYBRID RSA + AES FILE ENCRYPTION DASHBOARD</p>
+        </header>
+
+        <div class="dashboard">
+            <div class="panel" id="sender-panel">
+                <div class="panel-header"><h2>Sender Dashboard</h2></div>
+                <div class="stepper">
+                    <div class="step" id="step-sender-get-key">
+                        <div class="step-num">1</div>
+                        <div class="step-content">
+                            <div class="step-title">Get Public Key <span class="status-badge" id="badge-get-key">WAIT</span></div>
+                            <div class="step-desc">Retrieve the Receiver's RSA Public Key to secure the session.</div>
+                            <button class="btn" onclick="senderGetKey()" id="btn-get-key" disabled>Receive Key</button>
+                            <div class="success-msg" id="ok-sender-get-key"></div>
+                            <div class="error-msg" id="err-sender-get-key"></div>
+                        </div>
+                    </div>
+                    <div class="step" id="step-sender-select-file">
+                        <div class="step-num">3</div>
+                        <div class="step-content">
+                            <div class="step-title">Select File <span class="status-badge" id="badge-select-file">NONE</span></div>
+                            <div class="step-desc">Choose the confidential file you want to transfer securely.</div>
+                            <label for="file-input" class="file-label" id="file-label">Click to browse file</label>
+                            <input type="file" id="file-input" class="input-file" onchange="updateFileName()">
+                            <button class="btn" onclick="senderSelectFile()" id="btn-select-file" disabled>Confirm File</button>
+                            <div class="success-msg" id="ok-sender-select-file"></div>
+                            <div class="error-msg" id="err-sender-select-file"></div>
+                        </div>
+                    </div>
+                    <div class="step" id="step-sender-send-key">
+                        <div class="step-num">5</div>
+                        <div class="step-content">
+                            <div class="step-title">Send Session Key <span class="status-badge" id="badge-send-key">PENDING</span></div>
+                            <div class="step-desc">Generate and encrypt AES key for the session.</div>
+                            <div class="input-group" style="margin-bottom: 15px;">
+                                <input type="text" id="ip-sender" class="input-ip-modern" placeholder="Receiver IP (e.g. 192.168.1.1)" value="192.168.0.5">
+                            </div>
+                            <button class="btn" onclick="senderSendKey()" id="btn-send-key" disabled>Send Key</button>
+                            <div class="success-msg" id="ok-sender-send-key"></div>
+                            <div class="error-msg" id="err-sender-send-key"></div>
+                        </div>
+                    </div>
+                    <div class="step" id="step-sender-encrypt-file">
+                        <div class="step-num">7</div>
+                        <div class="step-content">
+                            <div class="step-title">Encrypt & Send File <span class="status-badge" id="badge-send-file">READY</span></div>
+                            <div class="step-desc">Encrypt the file with the session key and send it.</div>
+                            <button class="btn" onclick="senderSendFile()" id="btn-send-file" disabled>Encrypt & Send</button>
+                            <div class="success-msg" id="ok-sender-send-file"></div>
+                            <div class="error-msg" id="err-sender-send-file"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel" id="receiver-panel">
+                <div class="panel-header"><h2>Receiver Dashboard</h2></div>
+                <div class="stepper">
+                    <div class="step active" id="step-receiver-keys">
+                        <div class="step-num">2</div>
+                        <div class="step-content">
+                            <div class="step-title">Generate Keys <span class="status-badge" id="badge-keys">WAITING</span></div>
+                            <div class="step-desc">Create RSA Public/Private key pair. The Public Key will be shared with the Sender.</div>
+                            <div class="input-group" style="margin-bottom: 15px;">
+                                <input type="text" id="ip-receiver" class="input-ip-modern" placeholder="Your IP Address (e.g. 192.168.1.1)" value="192.168.0.5">
+                            </div>
+                            <button class="btn" onclick="receiverGenerateKeys()" id="btn-gen-keys">Generate & Share</button>
+                            <div class="success-msg" id="ok-receiver-keys"></div>
+                            <div class="error-msg" id="err-receiver-gen-keys"></div>
+                        </div>
+                    </div>
+                    <div class="step" id="step-receiver-decrypt-key">
+                        <div class="step-num">4</div>
+                        <div class="step-content">
+                            <div class="step-title">Decrypt Session Key <span class="status-badge" id="badge-session-key">LOCKED</span></div>
+                            <div class="step-desc">Wait for encrypted AES key and decrypt it using your Private Key.</div>
+                            <button class="btn" onclick="receiverDecryptKey()" id="btn-decrypt-key" disabled>Decrypt Key</button>
+                            <div class="success-msg" id="ok-receiver-decrypt-key"></div>
+                            <div class="error-msg" id="err-receiver-decrypt-key"></div>
+                        </div>
+                    </div>
+                    <div class="step" id="step-receiver-file">
+                        <div class="step-num">6</div>
+                        <div class="step-content">
+                            <div class="step-title">Receive & Save <span class="status-badge" id="badge-file">WAITING</span></div>
+                            <div class="step-desc">Wait for the encrypted file, decrypt it with the session key, and save it.</div>
+                            <button class="btn" onclick="receiverDownloadFile()" id="btn-download-file" disabled>Download Decrypted</button>
+                            <div class="success-msg" id="ok-receiver-file"></div>
+                            <div class="error-msg" id="err-receiver-file"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 40px;">
+            <button class="btn btn-outline" onclick="location.reload()">Reset All</button>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section"><h3>CryptDragon</h3><p>Advanced Hybrid RSA + AES File Encryption.</p></div>
+            <div class="footer-section"><h4>Tech</h4><ul><li>RSA 2048-bit</li><li>AES-256 CBC</li></ul></div>
+            <div class="footer-section"><h4>Project</h4><p>&copy; 2026 Reem Ameen.</p></div>
+        </div>
+    </footer>
+
+
+    <script>
+        /* =============================================
+           CryptDragon â€” Web Crypto API (Native/Fast)
+           No external libraries. Hardware-accelerated.
+        ============================================= */
+        const localState = {
+            public_key: null, private_key: null, session_key: null,
+            enc_session_key: null, file_data: null, filename: null,
+            enc_file_data: null, sender_session_key: null
+        };
+
+        // --- Helpers ---
+        function ab2b64(buf) { return btoa(String.fromCharCode(...new Uint8Array(buf))); }
+        function b642ab(b64) {
+            const bin = atob(b64), bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            return bytes.buffer;
+        }
+
+        // --- Crypto Functions (Web Crypto API) ---
+        async function generateRSAKeys() {
+            const kp = await crypto.subtle.generateKey(
+                { name: 'RSA-OAEP', modulusLength: 2048, publicExponent: new Uint8Array([1,0,1]), hash: 'SHA-256' },
+                true, ['encrypt', 'decrypt']
+            );
+            localState.public_key = kp.publicKey;
+            localState.private_key = kp.privateKey; 
+        }
+
+        async function generateSessionKey() {
+            return await crypto.subtle.generateKey({ name: 'AES-CBC', length: 128 }, true, ['encrypt', 'decrypt']);
+        }
+
+        async function encryptSessionKey(aesKey, rsaPub) {
+            const raw = await crypto.subtle.exportKey('raw', aesKey);
+            const enc = await crypto.subtle.encrypt({ name: 'RSA-OAEP' }, rsaPub, raw);
+            return ab2b64(enc);
+        }
+
+        async function decryptSessionKey(b64enc, rsaPriv) {
+            const raw = await crypto.subtle.decrypt({ name: 'RSA-OAEP' }, rsaPriv, b642ab(b64enc));
+            return await crypto.subtle.importKey('raw', raw, { name: 'AES-CBC' }, true, ['encrypt', 'decrypt']);
+        }
+
+        async function encryptData(data, aesKey) {
+            const iv = crypto.getRandomValues(new Uint8Array(16));
+            const encoded = new TextEncoder().encode(data);
+            const ct = await crypto.subtle.encrypt({ name: 'AES-CBC', iv }, aesKey, encoded);
+            const out = new Uint8Array(16 + ct.byteLength);
+            out.set(iv, 0); out.set(new Uint8Array(ct), 16);
+            return out;
+        }
+
+        async function decryptData(encBytes, aesKey) {
+            const iv = encBytes.slice(0, 16), ct = encBytes.slice(16);
+            return await crypto.subtle.decrypt({ name: 'AES-CBC', iv }, aesKey, ct);
+        }
+
+        function downloadBlob(data, name) {
+            const u = URL.createObjectURL(new Blob([data]));
+            const a = document.createElement('a'); a.href = u; a.download = name; a.click();
+            URL.revokeObjectURL(u);
+        }
+
+        // --- UI Feedback Helpers ---
+        function showSuccess(id, msg) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.textContent = msg;
+            el.style.display = 'block';
+        }
+        function showError(id, msg) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.textContent = msg;
+            el.style.display = 'block';
+        }
+        function clearFeedback(okId, errId) {
+            const ok = document.getElementById(okId), err = document.getElementById(errId);
+            if (ok) { ok.style.display = 'none'; ok.textContent = ''; }
+            if (err) { err.style.display = 'none'; err.textContent = ''; }
+        }
+        function setStepState(id, s) {
+            const el = document.getElementById(id); el.classList.remove('active', 'completed');
+            if (s === 'active') {
+                el.classList.add('active');
+                setTimeout(() => {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    el.style.animation = 'none';
+                    el.offsetHeight;
+                    el.style.animation = 'activePulse 2s ease infinite';
+                    const sc = el.querySelector('.step-content');
+                    if (sc) { sc.style.animation = 'attentionPulse 1.5s ease 2'; }
+                }, 300);
+            }
+            if (s === 'completed') el.classList.add('completed');
+        }
+        function updateBadge(id, t, ty) { const el = document.getElementById(id); el.innerText = t; el.className = 'status-badge ' + ty; }
+        function updateFileName() { document.getElementById('file-label').innerText = 'Selected: ' + document.getElementById('file-input').files[0].name; }
+
+        // --- Validation Helpers ---
+        function validateIP(ip) {
+            if (!ip || ip.trim() === "") return { valid: false, msg: "IP address cannot be empty." };
+            const parts = ip.split('.');
+            if (parts.length !== 4) return { valid: false, msg: "IP must follow X.X.X.X format." };
+            for (let i = 0; i < 4; i++) {
+                const n = parseInt(parts[i], 10);
+                if (isNaN(n) || n < 0 || n > 255 || parts[i] !== n.toString()) {
+                    return { valid: false, msg: `Invalid octet: "${parts[i]}". Must be 0-255.` };
+                }
+            }
+            return { valid: true };
+        }
+
+        // ============================================================
+        //  STEP FUNCTIONS â€” Each validates before unlocking next step
+        // ============================================================
+
+        // STEP 2 â€” Receiver generates RSA keys
+        async function receiverGenerateKeys() {
+            const btn = document.getElementById('btn-gen-keys');
+            const ipVal = document.getElementById('ip-receiver').value;
+            clearFeedback('ok-receiver-keys', 'err-receiver-gen-keys');
+
+            const v = validateIP(ipVal);
+            if (!v.valid) {
+                showError('err-receiver-gen-keys', v.msg);
+                return;
+            }
+
+            btn.disabled = true; btn.innerHTML = '<span style="opacity:.7">Generating...</span>';
+            try {
+                await generateRSAKeys();
+                // Validation: check keys are actually set
+                if (!localState.public_key || !localState.private_key) throw new Error('Key generation returned empty keys.');
+                setStepState('step-receiver-keys', 'completed');
+                updateBadge('badge-keys', 'DONE', 'done');
+                showSuccess('ok-receiver-keys', 'RSA 2048-bit Key Pair generated successfully. Public Key is now available.');
+                // Unlock Step 1
+                setStepState('step-sender-get-key', 'active');
+                document.getElementById('btn-get-key').disabled = false;
+                btn.textContent = 'Done';
+            } catch (e) {
+                showError('err-receiver-gen-keys', 'Key generation failed: ' + e.message);
+                btn.disabled = false; btn.innerHTML = 'Generate & Share';
+            }
+        }
+
+        // STEP 1 â€” Sender gets the public key
+        async function senderGetKey() {
+            clearFeedback('ok-sender-get-key', 'err-sender-get-key');
+            // Validation: public key must exist
+            if (!localState.public_key) {
+                showError('err-sender-get-key', 'Public key not available. Please complete Step 2 first.');
+                return;
+            }
+            setStepState('step-sender-get-key', 'completed');
+            updateBadge('badge-get-key', 'DONE', 'done');
+            showSuccess('ok-sender-get-key', 'Receiver\'s RSA Public Key retrieved successfully.');
+            // Unlock Step 3
+            setStepState('step-sender-select-file', 'active');
+            document.getElementById('btn-select-file').disabled = false;
+        }
+
+        // STEP 3 â€” Sender selects a file
+        async function senderSelectFile() {
+            clearFeedback('ok-sender-select-file', 'err-sender-select-file');
+            const f = document.getElementById('file-input').files[0];
+            // Validation: file must be selected
+            if (!f) {
+                showError('err-sender-select-file', 'No file selected. Please browse and choose a file first.');
+                return;
+            }
+            localState.filename = f.name;
+            const r = new FileReader();
+            r.onload = (e) => {
+                localState.file_data = e.target.result;
+                // Validation: file must have content
+                if (!localState.file_data || localState.file_data.length === 0) {
+                    showError('err-sender-select-file', 'Selected file is empty. Please choose a valid file.');
+                    return;
+                }
+                setStepState('step-sender-select-file', 'completed');
+                updateBadge('badge-select-file', 'DONE', 'done');
+                showSuccess('ok-sender-select-file', `File "${f.name}" (${(f.size/1024).toFixed(1)} KB) loaded successfully.`);
+                // Unlock Step 5
+                setStepState('step-sender-send-key', 'active');
+                document.getElementById('btn-send-key').disabled = false;
+            };
+            r.onerror = () => showError('err-sender-select-file', 'Failed to read the file.');
+            r.readAsText(f);
+        }
+
+        // STEP 5 â€” Sender generates & sends encrypted session key
+        async function senderSendKey() {
+            clearFeedback('ok-sender-send-key', 'err-sender-send-key');
+            // Validation: IP must be provided and valid
+            const ip = document.getElementById('ip-sender').value.trim();
+            const v = validateIP(ip);
+            if (!v.valid) {
+                showError('err-sender-send-key', v.msg);
+                return;
+            }
+            // Validation: public key must exist
+            if (!localState.public_key) {
+                showError('err-sender-send-key', 'Public key missing. Please complete previous steps first.');
+                return;
+            }
+            try {
+                const aesKey = await generateSessionKey();
+                localState.sender_session_key = aesKey;
+                localState.enc_session_key = await encryptSessionKey(aesKey, localState.public_key);
+                // Validation: encrypted key must exist
+                if (!localState.enc_session_key) throw new Error('Session key encryption failed.');
+                setStepState('step-sender-send-key', 'completed');
+                updateBadge('badge-send-key', 'DONE', 'done');
+                showSuccess('ok-sender-send-key', `AES-128 Session Key generated & encrypted with RSA-OAEP. Sent to ${ip}.`);
+                // Unlock Step 4
+                setStepState('step-receiver-decrypt-key', 'active');
+                document.getElementById('btn-decrypt-key').disabled = false;
+            } catch(e) {
+                showError('err-sender-send-key', 'Failed to encrypt session key: ' + e.message);
+            }
+        }
+
+        // STEP 4 â€” Receiver decrypts the session key
+        async function receiverDecryptKey() {
+            clearFeedback('ok-receiver-decrypt-key', 'err-receiver-decrypt-key');
+            // Validation: encrypted session key must exist
+            if (!localState.enc_session_key) {
+                showError('err-receiver-decrypt-key', 'No encrypted session key received. Complete Step 5 first.');
+                return;
+            }
+            if (!localState.private_key) {
+                showError('err-receiver-decrypt-key', 'Private key missing. Complete Step 2 first.');
+                return;
+            }
+            try {
+                localState.session_key = await decryptSessionKey(localState.enc_session_key, localState.private_key);
+                if (!localState.session_key) throw new Error('Decryption returned empty key.');
+                setStepState('step-receiver-decrypt-key', 'completed');
+                updateBadge('badge-session-key', 'DONE', 'done');
+                showSuccess('ok-receiver-decrypt-key', 'Session Key decrypted successfully using RSA Private Key. AES key is ready.');
+                // Unlock Step 7
+                setStepState('step-sender-encrypt-file', 'active');
+                document.getElementById('btn-send-file').disabled = false;
+            } catch(e) {
+                showError('err-receiver-decrypt-key', 'Decryption failed: ' + e.message);
+            }
+        }
+
+        // STEP 7 â€” Sender encrypts & sends the file
+        async function senderSendFile() {
+            clearFeedback('ok-sender-send-file', 'err-sender-send-file');
+            // Validation: file data and session key must exist
+            if (!localState.file_data) {
+                showError('err-sender-send-file', 'No file data. Please complete Step 3 first.');
+                return;
+            }
+            if (!localState.sender_session_key) {
+                showError('err-sender-send-file', 'Session key not ready. Complete Step 5 first.');
+                return;
+            }
+            try {
+                localState.enc_file_data = await encryptData(localState.file_data, localState.sender_session_key);
+                if (!localState.enc_file_data || localState.enc_file_data.byteLength === 0) throw new Error('Encryption produced empty output.');
+                setStepState('step-sender-encrypt-file', 'completed');
+                updateBadge('badge-send-file', 'DONE', 'done');
+                showSuccess('ok-sender-send-file', `File encrypted with AES-CBC. ${localState.enc_file_data.byteLength} bytes transferred to Receiver.`);
+                // Unlock Step 6
+                setStepState('step-receiver-file', 'active');
+                document.getElementById('btn-download-file').disabled = false;
+            } catch(e) {
+                showError('err-sender-send-file', 'File encryption failed: ' + e.message);
+            }
+        }
+
+        // STEP 6 â€” Receiver decrypts & downloads the file
+        async function receiverDownloadFile() {
+            clearFeedback('ok-receiver-file', 'err-receiver-file');
+            // Validation: encrypted file and session key must exist
+            if (!localState.enc_file_data) {
+                showError('err-receiver-file', 'No encrypted file received. Complete Step 7 first.');
+                return;
+            }
+            if (!localState.session_key) {
+                showError('err-receiver-file', 'Session key missing. Complete Step 4 first.');
+                return;
+            }
+            try {
+                const dec = await decryptData(localState.enc_file_data, localState.session_key);
+                downloadBlob(dec, 'decrypted_' + localState.filename);
+                updateBadge('badge-file', 'DONE', 'done');
+                setStepState('step-receiver-file', 'completed');
+                showSuccess('ok-receiver-file', `File decrypted successfully! "decrypted_${localState.filename}" has been downloaded.`);
+            } catch(e) {
+                showError('err-receiver-file', 'File decryption failed: ' + e.message);
+            }
+        }
+    </script>
+</body>
+</html>
+
+
